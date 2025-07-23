@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Lookup</title>
+    <style>
+        :root {
+            --primary: #1976d2;
+            --light: #e3f2fd;
+            --border: #cfd8dc;
+            --text: #0d47a1;
+            --bg: #f7fbff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            padding: 40px;
+            color: var(--text);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .form-container {
+            display: flex;
+            justify-content: center;
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 350px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        input[type="submit"] {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            margin-left: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        ul.suggestion-box {
+            position: absolute;
+            top: 42px;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid var(--border);
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            z-index: 1000;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        ul.suggestion-box li {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        ul.suggestion-box li:hover {
+            background-color: var(--light);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 40px;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--light);
+        }
+
+        .did-you-mean {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .did-you-mean span {
+            background-color: #e3f2fd;
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .did-you-mean span:hover {
+            background-color: #bbdefb;
+        }
+
+    </style>
+</head>
+<body>
+    <h2>🔍 Search Customer Details</h2>
+
+    <form method="POST" action="/search" class="form-container">
+        <div class="input-wrapper">
+            <input type="text" id="customer_name" name="customer_name" autocomplete="off" placeholder="Start typing..." value="{{ search_query }}">
+            <ul id="suggestions" class="suggestion-box" style="display:none;"></ul>
+        </div>
+        <input type="submit" value="Search">
+    </form>
+
+    {% if result %}
+        <h3>Details for {{ result["Customer Name"] }}</h3>
+        <table>
+            <thead>
+                <tr>
+                    {% for key in result.keys() %}
+                        <th>{{ key }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    {% for value in result.values() %}
+                        <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    {% elif search_query and suggestions %}
+        <div class="did-you-mean">
+            <p>No exact match found for <strong>"{{ search_query }}"</strong>.</p>
+            <p>Did you mean:</p>
+            {% for name in suggestions %}
+                <span onclick="selectSuggestion('{{ name }}')">{{ name }}</span>
+            {% endfor %}
+        </div>
+    {% elif search_query %}
+        <p style="text-align:center;">No customer found for <strong>"{{ search_query }}"</strong>.</p>
+    {% endif %}
+
+
+    <script>
+        const input = document.getElementById("customer_name");
+        const suggestionsBox = document.getElementById("suggestions");
+
+        input.addEventListener("input", () => {
+            const query = input.value.trim();
+            if (!query) {
+                suggestionsBox.style.display = "none";
+                return;
+            }
+
+            fetch(`/suggest?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    suggestionsBox.innerHTML = "";
+                    if (data.length === 0) {
+                        suggestionsBox.style.display = "none";
+                        return;
+                    }
+                    data.forEach(name => {
+                        const li = document.createElement("li");
+                        li.textContent = name;
+                        li.addEventListener("click", () => {
+                            input.value = name;
+                            suggestionsBox.style.display = "none";
+                        });
+                        suggestionsBox.appendChild(li);
+                    });
+                    suggestionsBox.style.display = "block";
+                });
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".input-wrapper")) {
+                suggestionsBox.style.display = "none";
+            }
+        });
+
+        // Suggestion from "Did you mean"
+        function selectSuggestion(name) {
+            document.getElementById("customer_name").value = name;
+            document.querySelector("form").submit();
+        }
+    </script>
+</body>
+</html>

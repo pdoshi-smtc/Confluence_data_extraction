@@ -1,0 +1,8 @@
+Live suggestion as you type
+Input	Result / Suggestion
+gomer	✅ Gomero Nordic AB
+autosprt	✅ SC Autosports
+gomeroo	✅ Gomero Nordic AB (via fuzzy match)
+komero	✅ Gomero Nordic AB (via Soundex match)
+asdd	❌ No results (not even Soundex)
+
